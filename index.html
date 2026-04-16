@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordMaster - 小学生英语单词助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* 连连看游戏样式 */
+        #pairing-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 配对卡片样式 - 正面显示 */
+        .pairing-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .pairing-card.english-card {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 3px solid #22c55e;
+        }
+
+        .pairing-card.chinese-card {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 3px solid #f59e0b;
+        }
+
+        .pairing-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        /* 卡片选中效果 */
+        .pairing-card.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        /* 卡片匹配成功效果 */
+        .pairing-card.matched {
+            background-color: #bbf7d0 !important;
+            border-color: #16a34a !important;
+            border-width: 3px !important;
+            opacity: 1;
+            cursor: default;
+            pointer-events: none;
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pairing-card.matched::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #22c55e;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 匹配成功动画 */
+        @keyframes match-success {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(0.95); }
+        }
+
+        .pairing-card.match-animate {
+            animation: match-success 0.3s ease-out;
+        }
+
+        /* 错误抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* 胜利动画 */
+        @keyframes bounce-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .bounce-in {
+            animation: bounce-in 0.5s;
+        }
+
+        /* 字母格子样式 */
+        .letter-box {
+            width: 36px;
+        }
+
+        .letter-display {
+            transition: all 0.15s ease;
+            min-width: 24px;
+        }
+
+        .letter-display.letter-filled {
+            color: #1d4ed8;
+            animation: pop-in 0.15s ease;
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        /* 标题动画 */
+        h1, h2, h3 {
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 640px) {
+            #pairing-board {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 10px;
+            }
+
+            .card-inner h-24 {
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold text-center my-8">小学生英语单词助手</h1>
+
+    <!-- 欢迎页面 -->
+    <div id="welcome-screen">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold mb-4">词汇记忆挑战</h2>
+            <p class="text-gray-600 mb-6">通过趣味互动游戏，高效掌握各类英语词汇</p>
+
+            <!-- 词汇类别选择 - 菜单式 -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">选择词汇类别</h3>
+                <div class="flex flex-col md:flex-row gap-4 justify-center items-center">
+                    <div class="w-full md:w-auto">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择年级</label>
+                        <select id="category-select" class="w-full md:w-56 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">全部词汇</option>
+                            <option value="grade3-up">三年级上册</option>
+                            <option value="grade3-down">三年级下册</option>
+                            <option value="grade4-up">四年级上册</option>
+                            <option value="grade4-down">四年级下册</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择单元</label>
+                        <select id="unit-select" class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">全部单元</option>
+                            <option value="unit1">Unit 1</option>
+                            <option value="unit2">Unit 2</option>
+                            <option value="unit3">Unit 3</option>
+                            <option value="unit4">Unit 4</option>
+                            <option value="unit5">Unit 5</option>
+                            <option value="unit6">Unit 6</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏模式选择 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div id="pairing-card" class="card">
+                    <h3 class="text-xl font-bold mb-2">单词配对</h3>
+                    <p class="text-gray-600">将英文单词与中文释义精准配对</p>
+                </div>
+                <div id="spelling-card" class="card">
+                    <h3 class="text-xl font-bold mb-2">拼写练习</h3>
+                    <p class="text-gray-600">根据中文提示拼写英文单词</p>
+                </div>
+                <div id="quiz-card" class="card">
+                    <h3 class="text-xl font-bold mb-2">快速测验</h3>
+                    <p class="text-gray-600">限时答题挑战，测试知识掌握</p>
+                </div>
+            </div>
+
+            <button id="view-vocabulary" class="btn-primary">
+                <i class="fa fa-book"></i> 查看完整词汇表
+            </button>
+        </div>
+    </div>
+
+    <!-- 词汇表页面 -->
+    <div id="vocabulary-list" class="hidden">
+        <div class="mb-4">
+            <button id="back-from-vocab" class="btn-primary">
+                <i class="fa fa-arrow-left"></i> 返回主页
+            </button>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">词汇表</h2>
+        <table id="vocab-table">
+            <thead>
+                <tr>
+                    <th>英文单词</th>
+                    <th>中文释义</th>
+                    <th>类别</th>
+                    <th>单元</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="vocab-table-body">
+                <!-- 词汇表内容将通过JS动态生成 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 游戏页面 -->
+    <div id="pairing-game" class="hidden">
+        <div class="mb-4">
+            <button id="back-from-pairing" class="btn-primary">
+                <i class="fa fa-arrow-left"></i> 返回主页
+            </button>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">单词配对游戏</h2>
+        <p class="text-center text-gray-600 mb-4">点击一个英文单词，再点击对应的中文释义进行配对</p>
+        <div id="pairing-board" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- 配对卡片将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <div id="spelling-game" class="hidden">
+        <div class="mb-4">
+            <button id="back-from-spelling" class="btn-primary">
+                <i class="fa fa-arrow-left"></i> 返回主页
+            </button>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">拼写练习游戏</h2>
+        <div id="spelling-container">
+            <!-- 拼写练习内容将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <div id="quiz-game" class="hidden">
+        <div class="mb-4">
+            <button id="back-from-quiz" class="btn-primary">
+                <i class="fa fa-arrow-left"></i> 返回主页
+            </button>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">快速测验游戏</h2>
+        <div id="quiz-container">
+            <!-- 测验内容将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 词汇数据 - 人教版PEP三年级和四年级单词（完整版）
+        const vocabularyData = [
+            // ==================== 三年级上册 ====================
+            // Unit 1 问候与介绍
+            { english: "nice", chinese: "令人愉快的；友好的", category: "grade3-up", unit: "unit1" },
+            { english: "ear", chinese: "耳朵", category: "grade3-up", unit: "unit1" },
+            { english: "hand", chinese: "手", category: "grade3-up", unit: "unit1" },
+            { english: "eye", chinese: "眼睛", category: "grade3-up", unit: "unit1" },
+            { english: "mouth", chinese: "嘴", category: "grade3-up", unit: "unit1" },
+            { english: "arm", chinese: "胳膊", category: "grade3-up", unit: "unit1" },
+            { english: "can", chinese: "可以", category: "grade3-up", unit: "unit1" },
+            { english: "share", chinese: "分享", category: "grade3-up", unit: "unit1" },
+            { english: "smile", chinese: "微笑；笑", category: "grade3-up", unit: "unit1" },
+            { english: "listen", chinese: "听；倾听", category: "grade3-up", unit: "unit1" },
+            { english: "help", chinese: "帮助", category: "grade3-up", unit: "unit1" },
+            { english: "say", chinese: "说；讲", category: "grade3-up", unit: "unit1" },
+            { english: "and", chinese: "和；与", category: "grade3-up", unit: "unit1" },
+            { english: "goodbye", chinese: "再见", category: "grade3-up", unit: "unit1" },
+            { english: "toy", chinese: "玩具", category: "grade3-up", unit: "unit1" },
+            { english: "friend", chinese: "朋友", category: "grade3-up", unit: "unit1" },
+            { english: "good", chinese: "好的", category: "grade3-up", unit: "unit1" },
+
+            // Unit 2 家庭成员
+            { english: "mum", chinese: "（口语）妈妈", category: "grade3-up", unit: "unit2" },
+            { english: "dad", chinese: "（口语）爸爸；爹爹", category: "grade3-up", unit: "unit2" },
+            { english: "grandma", chinese: "（口语）（外）祖母；奶奶；姥姥", category: "grade3-up", unit: "unit2" },
+            { english: "grandpa", chinese: "（口语）（外）祖父；爷爷；姥爷", category: "grade3-up", unit: "unit2" },
+            { english: "grandfather", chinese: "（外）祖父", category: "grade3-up", unit: "unit2" },
+            { english: "grandmother", chinese: "（外）祖母", category: "grade3-up", unit: "unit2" },
+            { english: "mother", chinese: "母亲；妈妈", category: "grade3-up", unit: "unit2" },
+            { english: "father", chinese: "父亲；爸爸", category: "grade3-up", unit: "unit2" },
+            { english: "me", chinese: "我", category: "grade3-up", unit: "unit2" },
+            { english: "sister", chinese: "姐；妹", category: "grade3-up", unit: "unit2" },
+            { english: "family", chinese: "家；家庭", category: "grade3-up", unit: "unit2" },
+            { english: "have", chinese: "有", category: "grade3-up", unit: "unit2" },
+            { english: "big", chinese: "大的", category: "grade3-up", unit: "unit2" },
+            { english: "cousin", chinese: "堂（表）兄弟；堂（表）姐妹", category: "grade3-up", unit: "unit2" },
+            { english: "brother", chinese: "兄；弟", category: "grade3-up", unit: "unit2" },
+            { english: "baby", chinese: "婴儿", category: "grade3-up", unit: "unit2" },
+            { english: "uncle", chinese: "舅父；伯父；叔父；姑父；姨夫", category: "grade3-up", unit: "unit2" },
+            { english: "aunt", chinese: "姑母；姨母；伯母；婶母；舅母", category: "grade3-up", unit: "unit2" },
+            { english: "some", chinese: "一些", category: "grade3-up", unit: "unit2" },
+            { english: "small", chinese: "小的", category: "grade3-up", unit: "unit2" },
+
+            // Unit 3 动物
+            { english: "like", chinese: "喜欢", category: "grade3-up", unit: "unit3" },
+            { english: "dog", chinese: "狗", category: "grade3-up", unit: "unit3" },
+            { english: "pet", chinese: "宠物", category: "grade3-up", unit: "unit3" },
+            { english: "cat", chinese: "猫", category: "grade3-up", unit: "unit3" },
+            { english: "fish", chinese: "鱼", category: "grade3-up", unit: "unit3" },
+            { english: "bird", chinese: "鸟", category: "grade3-up", unit: "unit3" },
+            { english: "rabbit", chinese: "兔", category: "grade3-up", unit: "unit3" },
+            { english: "go", chinese: "去", category: "grade3-up", unit: "unit3" },
+            { english: "zoo", chinese: "动物园", category: "grade3-up", unit: "unit3" },
+            { english: "fox", chinese: "狐狸", category: "grade3-up", unit: "unit3" },
+            { english: "Miss", chinese: "（学生对女教师的称呼）；女士", category: "grade3-up", unit: "unit3" },
+            { english: "panda", chinese: "大熊猫", category: "grade3-up", unit: "unit3" },
+            { english: "red panda", chinese: "小熊猫", category: "grade3-up", unit: "unit3" },
+            { english: "cute", chinese: "可爱的", category: "grade3-up", unit: "unit3" },
+            { english: "monkey", chinese: "猴子", category: "grade3-up", unit: "unit3" },
+            { english: "tiger", chinese: "老虎", category: "grade3-up", unit: "unit3" },
+            { english: "elephant", chinese: "大象", category: "grade3-up", unit: "unit3" },
+            { english: "lion", chinese: "狮子", category: "grade3-up", unit: "unit3" },
+            { english: "giraffe", chinese: "长颈鹿", category: "grade3-up", unit: "unit3" },
+            { english: "tall", chinese: "高的", category: "grade3-up", unit: "unit3" },
+            { english: "fast", chinese: "快的", category: "grade3-up", unit: "unit3" },
+
+            // Unit 4 水果与植物
+            { english: "apple", chinese: "苹果", category: "grade3-up", unit: "unit4" },
+            { english: "banana", chinese: "香蕉", category: "grade3-up", unit: "unit4" },
+            { english: "farm", chinese: "农场", category: "grade3-up", unit: "unit4" },
+            { english: "air", chinese: "空气", category: "grade3-up", unit: "unit4" },
+            { english: "orange", chinese: "橙子", category: "grade3-up", unit: "unit4" },
+            { english: "grape", chinese: "葡萄", category: "grade3-up", unit: "unit4" },
+            { english: "school", chinese: "学校", category: "grade3-up", unit: "unit4" },
+            { english: "garden", chinese: "花园", category: "grade3-up", unit: "unit4" },
+            { english: "need", chinese: "需要", category: "grade3-up", unit: "unit4" },
+            { english: "water", chinese: "给......浇水；水", category: "grade3-up", unit: "unit4" },
+            { english: "flower", chinese: "花", category: "grade3-up", unit: "unit4" },
+            { english: "grass", chinese: "草；草地", category: "grade3-up", unit: "unit4" },
+            { english: "plant", chinese: "种植；植物", category: "grade3-up", unit: "unit4" },
+            { english: "new", chinese: "新的", category: "grade3-up", unit: "unit4" },
+            { english: "tree", chinese: "树", category: "grade3-up", unit: "unit4" },
+            { english: "sun", chinese: "太阳", category: "grade3-up", unit: "unit4" },
+            { english: "give", chinese: "给", category: "grade3-up", unit: "unit4" },
+            { english: "us", chinese: "我们", category: "grade3-up", unit: "unit4" },
+            { english: "them", chinese: "它们；他们", category: "grade3-up", unit: "unit4" },
+
+            // Unit 5 颜色
+            { english: "colour", chinese: "颜色", category: "grade3-up", unit: "unit5" },
+            { english: "orange", chinese: "橙红色；橙红色的", category: "grade3-up", unit: "unit5" },
+            { english: "green", chinese: "绿色；绿色的", category: "grade3-up", unit: "unit5" },
+            { english: "red", chinese: "红色；红色的", category: "grade3-up", unit: "unit5" },
+            { english: "blue", chinese: "蓝色；蓝色的", category: "grade3-up", unit: "unit5" },
+            { english: "make", chinese: "使出现；做", category: "grade3-up", unit: "unit5" },
+            { english: "purple", chinese: "紫色；紫色的", category: "grade3-up", unit: "unit5" },
+            { english: "brown", chinese: "棕色；棕色的", category: "grade3-up", unit: "unit5" },
+            { english: "bear", chinese: "熊", category: "grade3-up", unit: "unit5" },
+            { english: "yellow", chinese: "黄色（的）", category: "grade3-up", unit: "unit5" },
+            { english: "duck", chinese: "鸭", category: "grade3-up", unit: "unit5" },
+            { english: "sea", chinese: "海洋", category: "grade3-up", unit: "unit5" },
+            { english: "pink", chinese: "粉色；粉色的", category: "grade3-up", unit: "unit5" },
+            { english: "draw", chinese: "画", category: "grade3-up", unit: "unit5" },
+            { english: "white", chinese: "白色（的）", category: "grade3-up", unit: "unit5" },
+            { english: "black", chinese: "黑色（的）", category: "grade3-up", unit: "unit5" },
+
+            // Unit 6 数字与年龄
+            { english: "old", chinese: "（多少）岁；年纪；旧的", category: "grade3-up", unit: "unit6" },
+            { english: "five", chinese: "五", category: "grade3-up", unit: "unit6" },
+            { english: "year", chinese: "年纪；年", category: "grade3-up", unit: "unit6" },
+            { english: "one", chinese: "一", category: "grade3-up", unit: "unit6" },
+            { english: "two", chinese: "二", category: "grade3-up", unit: "unit6" },
+            { english: "three", chinese: "三", category: "grade3-up", unit: "unit6" },
+            { english: "four", chinese: "四", category: "grade3-up", unit: "unit6" },
+            { english: "ten", chinese: "十", category: "grade3-up", unit: "unit6" },
+            { english: "six", chinese: "六", category: "grade3-up", unit: "unit6" },
+            { english: "seven", chinese: "七", category: "grade3-up", unit: "unit6" },
+            { english: "eight", chinese: "八", category: "grade3-up", unit: "unit6" },
+            { english: "nine", chinese: "九", category: "grade3-up", unit: "unit6" },
+            { english: "o'clock", chinese: "（表示整点）......点钟", category: "grade3-up", unit: "unit6" },
+            { english: "cut", chinese: "切块", category: "grade3-up", unit: "unit6" },
+            { english: "piece", chinese: "块；片", category: "grade3-up", unit: "unit6" },
+            { english: "eat", chinese: "吃", category: "grade3-up", unit: "unit6" },
+            { english: "cake", chinese: "蛋糕", category: "grade3-up", unit: "unit6" },
+
+            // ==================== 三年级下册 ====================
+            // Unit 1 认识新朋友
+            { english: "where", chinese: "在哪里；到哪里", category: "grade3-down", unit: "unit1" },
+            { english: "from", chinese: "（表示来源）来自，从……来", category: "grade3-down", unit: "unit1" },
+            { english: "about", chinese: "大约；左右", category: "grade3-down", unit: "unit1" },
+            { english: "today", chinese: "今天", category: "grade3-down", unit: "unit1" },
+            { english: "teacher", chinese: "教师", category: "grade3-down", unit: "unit1" },
+            { english: "student", chinese: "学生", category: "grade3-down", unit: "unit1" },
+            { english: "after", chinese: "在……后面", category: "grade3-down", unit: "unit1" },
+            { english: "who", chinese: "谁；什么人", category: "grade3-down", unit: "unit1" },
+            { english: "girl", chinese: "女孩", category: "grade3-down", unit: "unit1" },
+            { english: "neighbour", chinese: "邻居", category: "grade3-down", unit: "unit1" },
+            { english: "boy", chinese: "男孩", category: "grade3-down", unit: "unit1" },
+            { english: "woman", chinese: "成年女子", category: "grade3-down", unit: "unit1" },
+            { english: "man", chinese: "成年男子；男人", category: "grade3-down", unit: "unit1" },
+            { english: "Mr", chinese: "（用于男子的姓氏或姓名前）先生", category: "grade3-down", unit: "unit1" },
+            { english: "classmate", chinese: "同班同学", category: "grade3-down", unit: "unit1" },
+            { english: "he", chinese: "他", category: "grade3-down", unit: "unit1" },
+            { english: "English", chinese: "英语的；英语", category: "grade3-down", unit: "unit1" },
+            { english: "she", chinese: "她", category: "grade3-down", unit: "unit1" },
+            { english: "very", chinese: "很；非常；十分", category: "grade3-down", unit: "unit1" },
+            { english: "UK", chinese: "英国", category: "grade3-down", unit: "unit1" },
+            { english: "China", chinese: "中国", category: "grade3-down", unit: "unit1" },
+            { english: "Canada", chinese: "加拿大", category: "grade3-down", unit: "unit1" },
+            { english: "USA", chinese: "美国", category: "grade3-down", unit: "unit1" },
+
+            // Unit 2 表达自己
+            { english: "has", chinese: "（have的第三人称单数形式）具有", category: "grade3-down", unit: "unit2" },
+            { english: "long", chinese: "（长度或距离）长的", category: "grade3-down", unit: "unit2" },
+            { english: "body", chinese: "身体", category: "grade3-down", unit: "unit2" },
+            { english: "short", chinese: "短的；个子矮的", category: "grade3-down", unit: "unit2" },
+            { english: "leg", chinese: "腿", category: "grade3-down", unit: "unit2" },
+            { english: "right", chinese: "（意见或判断）准确，确切", category: "grade3-down", unit: "unit2" },
+            { english: "fat", chinese: "肥的；肥胖的", category: "grade3-down", unit: "unit2" },
+            { english: "thin", chinese: "瘦的", category: "grade3-down", unit: "unit2" },
+            { english: "slow", chinese: "缓慢的；慢的", category: "grade3-down", unit: "unit2" },
+            { english: "love", chinese: "喜爱；爱", category: "grade3-down", unit: "unit2" },
+            { english: "tail", chinese: "尾；尾巴", category: "grade3-down", unit: "unit2" },
+            { english: "bye", chinese: "再见；再会", category: "grade3-down", unit: "unit2" },
+            { english: "her", chinese: "她；她的", category: "grade3-down", unit: "unit2" },
+            { english: "gift", chinese: "礼物", category: "grade3-down", unit: "unit2" },
+            { english: "picture", chinese: "图画；绘画", category: "grade3-down", unit: "unit2" },
+            { english: "card", chinese: "贺卡；慰问卡；卡片", category: "grade3-down", unit: "unit2" },
+            { english: "sing", chinese: "唱（歌）；演唱", category: "grade3-down", unit: "unit2" },
+            { english: "dance", chinese: "跳舞", category: "grade3-down", unit: "unit2" },
+            { english: "face", chinese: "脸；面孔", category: "grade3-down", unit: "unit2" },
+            { english: "all", chinese: "所有；全部", category: "grade3-down", unit: "unit2" },
+            { english: "so", chinese: "（表示大小或数量）这么，那么", category: "grade3-down", unit: "unit2" },
+            { english: "talk", chinese: "（用某种语言）讲，说；说话", category: "grade3-down", unit: "unit2" },
+            { english: "song", chinese: "歌；歌曲", category: "grade3-down", unit: "unit2" },
+            { english: "or", chinese: "或；或者；还是", category: "grade3-down", unit: "unit2" },
+            { english: "much", chinese: "许多；大量", category: "grade3-down", unit: "unit2" },
+
+            // Unit 3 学习用品
+            { english: "eraser", chinese: "橡皮", category: "grade3-down", unit: "unit3" },
+            { english: "find", chinese: "找到；找回", category: "grade3-down", unit: "unit3" },
+            { english: "ruler", chinese: "直尺", category: "grade3-down", unit: "unit3" },
+            { english: "pen", chinese: "钢笔", category: "grade3-down", unit: "unit3" },
+            { english: "pencil", chinese: "铅笔", category: "grade3-down", unit: "unit3" },
+            { english: "book", chinese: "书；书籍", category: "grade3-down", unit: "unit3" },
+            { english: "bag", chinese: "包；袋", category: "grade3-down", unit: "unit3" },
+            { english: "paper", chinese: "纸", category: "grade3-down", unit: "unit3" },
+            { english: "these", chinese: "这些", category: "grade3-down", unit: "unit3" },
+            { english: "see", chinese: "看见", category: "grade3-down", unit: "unit3" },
+            { english: "smell", chinese: "闻（气味）", category: "grade3-down", unit: "unit3" },
+            { english: "taste", chinese: "尝（味道）", category: "grade3-down", unit: "unit3" },
+            { english: "hear", chinese: "听见；听到", category: "grade3-down", unit: "unit3" },
+            { english: "touch", chinese: "触摸；碰", category: "grade3-down", unit: "unit3" },
+            { english: "sense", chinese: "感觉官能（视、听、嗅、味、触）", category: "grade3-down", unit: "unit3" },
+            { english: "learn", chinese: "学；学习", category: "grade3-down", unit: "unit3" },
+            { english: "nose", chinese: "鼻；鼻子", category: "grade3-down", unit: "unit3" },
+            { english: "tongue", chinese: "舌；舌头", category: "grade3-down", unit: "unit3" },
+            { english: "class", chinese: "课；班级", category: "grade3-down", unit: "unit3" },
+            { english: "computer", chinese: "计算机；电脑", category: "grade3-down", unit: "unit3" },
+
+            // Unit 4 健康食物
+            { english: "breakfast", chinese: "早餐；早饭", category: "grade3-down", unit: "unit4" },
+            { english: "time", chinese: "时间", category: "grade3-down", unit: "unit4" },
+            { english: "bread", chinese: "面包", category: "grade3-down", unit: "unit4" },
+            { english: "egg", chinese: "（作食物用的）蛋；鸡蛋", category: "grade3-down", unit: "unit4" },
+            { english: "milk", chinese: "（牛或羊等的）奶", category: "grade3-down", unit: "unit4" },
+            { english: "noodle", chinese: "（常用复数）面条", category: "grade3-down", unit: "unit4" },
+            { english: "juice", chinese: "果汁", category: "grade3-down", unit: "unit4" },
+            { english: "rice", chinese: "大米", category: "grade3-down", unit: "unit4" },
+            { english: "meat", chinese: "肉", category: "grade3-down", unit: "unit4" },
+            { english: "vegetable", chinese: "蔬菜", category: "grade3-down", unit: "unit4" },
+            { english: "healthy", chinese: "健康的", category: "grade3-down", unit: "unit4" },
+            { english: "plate", chinese: "盘子", category: "grade3-down", unit: "unit4" },
+            { english: "soup", chinese: "汤", category: "grade3-down", unit: "unit4" },
+            { english: "fruit", chinese: "水果", category: "grade3-down", unit: "unit4" },
+            { english: "colourful", chinese: "五彩缤纷的", category: "grade3-down", unit: "unit4" },
+            { english: "candy", chinese: "糖果", category: "grade3-down", unit: "unit4" },
+            { english: "yummy", chinese: "很好吃的", category: "grade3-down", unit: "unit4" },
+
+            // Unit 5 玩具
+            { english: "at", chinese: "在（某处）", category: "grade3-down", unit: "unit5" },
+            { english: "home", chinese: "家；住所", category: "grade3-down", unit: "unit5" },
+            { english: "boat", chinese: "小船；舟", category: "grade3-down", unit: "unit5" },
+            { english: "cool", chinese: "（因时髦、漂亮而）酷的，绝妙的", category: "grade3-down", unit: "unit5" },
+            { english: "keep", chinese: "保有；留着", category: "grade3-down", unit: "unit5" },
+            { english: "ball", chinese: "球", category: "grade3-down", unit: "unit5" },
+            { english: "doll", chinese: "玩偶；玩具娃娃", category: "grade3-down", unit: "unit5" },
+            { english: "car", chinese: "小汽车；轿车", category: "grade3-down", unit: "unit5" },
+            { english: "on", chinese: "（覆盖、附着）在……上", category: "grade3-down", unit: "unit5" },
+            { english: "shelf", chinese: "（复数shelves）架子", category: "grade3-down", unit: "unit5" },
+            { english: "in", chinese: "在……内；在……中", category: "grade3-down", unit: "unit5" },
+            { english: "box", chinese: "盒子", category: "grade3-down", unit: "unit5" },
+            { english: "now", chinese: "现在", category: "grade3-down", unit: "unit5" },
+            { english: "cap", chinese: "帽子", category: "grade3-down", unit: "unit5" },
+            { english: "map", chinese: "地图", category: "grade3-down", unit: "unit5" },
+            { english: "under", chinese: "在（或到、通过）……下面", category: "grade3-down", unit: "unit5" },
+            { english: "still", chinese: "还是；仍然", category: "grade3-down", unit: "unit5" },
+            { english: "put", chinese: "放；安置", category: "grade3-down", unit: "unit5" },
+
+            // Unit 6 数字
+            { english: "fifteen", chinese: "十五", category: "grade3-down", unit: "unit6" },
+            { english: "twelve", chinese: "十二", category: "grade3-down", unit: "unit6" },
+            { english: "fourteen", chinese: "十四", category: "grade3-down", unit: "unit6" },
+            { english: "thirteen", chinese: "十三", category: "grade3-down", unit: "unit6" },
+            { english: "eleven", chinese: "十一", category: "grade3-down", unit: "unit6" },
+            { english: "choose", chinese: "选择；挑选", category: "grade3-down", unit: "unit6" },
+            { english: "twenty", chinese: "二十", category: "grade3-down", unit: "unit6" },
+            { english: "seventeen", chinese: "十七", category: "grade3-down", unit: "unit6" },
+            { english: "sixteen", chinese: "十六", category: "grade3-down", unit: "unit6" },
+            { english: "eighteen", chinese: "十八", category: "grade3-down", unit: "unit6" },
+            { english: "nineteen", chinese: "十九", category: "grade3-down", unit: "unit6" },
+            { english: "save", chinese: "储蓄；攒钱", category: "grade3-down", unit: "unit6" },
+            { english: "spend", chinese: "用，花（钱）", category: "grade3-down", unit: "unit6" },
+            { english: "piggy bank", chinese: "猪形储钱罐", category: "grade3-down", unit: "unit6" },
+            { english: "pay", chinese: "付费", category: "grade3-down", unit: "unit6" },
+            { english: "back", chinese: "回到原处", category: "grade3-down", unit: "unit6" },
+
+            // ==================== 四年级上册 ====================
+            // Unit 1 职业与家务
+            { english: "PE", chinese: "体育（课）", category: "grade4-up", unit: "unit1" },
+            { english: "job", chinese: "工作；职业", category: "grade4-up", unit: "unit1" },
+            { english: "doctor", chinese: "医生", category: "grade4-up", unit: "unit1" },
+            { english: "farmer", chinese: "农场主；农民", category: "grade4-up", unit: "unit1" },
+            { english: "nurse", chinese: "护士", category: "grade4-up", unit: "unit1" },
+            { english: "worker", chinese: "工人", category: "grade4-up", unit: "unit1" },
+            { english: "office worker", chinese: "公司职员", category: "grade4-up", unit: "unit1" },
+            { english: "factory worker", chinese: "工厂工人", category: "grade4-up", unit: "unit1" },
+            { english: "busy", chinese: "忙碌的", category: "grade4-up", unit: "unit1" },
+            { english: "tired", chinese: "疲倦的", category: "grade4-up", unit: "unit1" },
+            { english: "chore", chinese: "家庭杂务", category: "grade4-up", unit: "unit1" },
+            { english: "cook", chinese: "烹饪；煮", category: "grade4-up", unit: "unit1" },
+            { english: "clean", chinese: "打扫；干净的", category: "grade4-up", unit: "unit1" },
+            { english: "room", chinese: "房间", category: "grade4-up", unit: "unit1" },
+            { english: "also", chinese: "也", category: "grade4-up", unit: "unit1" },
+            { english: "look after", chinese: "照顾", category: "grade4-up", unit: "unit1" },
+            { english: "sweep", chinese: "扫", category: "grade4-up", unit: "unit1" },
+            { english: "floor", chinese: "地板；地面", category: "grade4-up", unit: "unit1" },
+            { english: "together", chinese: "在一起；共同", category: "grade4-up", unit: "unit1" },
+            { english: "fun", chinese: "享乐；乐趣", category: "grade4-up", unit: "unit1" },
+            { english: "helpful", chinese: "有帮助的；有用的", category: "grade4-up", unit: "unit1" },
+            { english: "people", chinese: "人；人们", category: "grade4-up", unit: "unit1" },
+            { english: "child", chinese: "儿童；小孩", category: "grade4-up", unit: "unit1" },
+
+            // Unit 2 我的朋友
+            { english: "strong", chinese: "强壮的", category: "grade4-up", unit: "unit2" },
+            { english: "hair", chinese: "头发", category: "grade4-up", unit: "unit2" },
+            { english: "kind", chinese: "友好的", category: "grade4-up", unit: "unit2" },
+            { english: "quiet", chinese: "文静的", category: "grade4-up", unit: "unit2" },
+            { english: "best", chinese: "最好的", category: "grade4-up", unit: "unit2" },
+            { english: "read", chinese: "阅读", category: "grade4-up", unit: "unit2" },
+            { english: "Chinese", chinese: "中文；中国人；中国的", category: "grade4-up", unit: "unit2" },
+            { english: "play", chinese: "玩耍", category: "grade4-up", unit: "unit2" },
+            { english: "game", chinese: "游戏", category: "grade4-up", unit: "unit2" },
+            { english: "football", chinese: "足球运动", category: "grade4-up", unit: "unit2" },
+            { english: "both", chinese: "两者", category: "grade4-up", unit: "unit2" },
+            { english: "basketball", chinese: "篮球运动", category: "grade4-up", unit: "unit2" },
+            { english: "always", chinese: "总是", category: "grade4-up", unit: "unit2" },
+
+            // Unit 3 周末活动
+            { english: "afternoon", chinese: "下午", category: "grade4-up", unit: "unit3" },
+            { english: "there", chinese: "（表示存在或发生）", category: "grade4-up", unit: "unit3" },
+            { english: "playground", chinese: "游乐场；操场", category: "grade4-up", unit: "unit3" },
+            { english: "park", chinese: "公园", category: "grade4-up", unit: "unit3" },
+            { english: "over", chinese: "在……的远端（或对面）", category: "grade4-up", unit: "unit3" },
+            { english: "hospital", chinese: "医院", category: "grade4-up", unit: "unit3" },
+            { english: "shop", chinese: "商店", category: "grade4-up", unit: "unit3" },
+            { english: "toilet", chinese: "厕所；卫生间", category: "grade4-up", unit: "unit3" },
+            { english: "bus", chinese: "公共汽车", category: "grade4-up", unit: "unit3" },
+            { english: "stop", chinese: "车站", category: "grade4-up", unit: "unit3" },
+            { english: "library", chinese: "图书馆", category: "grade4-up", unit: "unit3" },
+            { english: "sport", chinese: "体育运动", category: "grade4-up", unit: "unit3" },
+            { english: "walk", chinese: "散步；行走", category: "grade4-up", unit: "unit3" },
+            { english: "take", chinese: "（与名词连用，表示举动）；带走", category: "grade4-up", unit: "unit3" },
+            { english: "take a walk", chinese: "散步", category: "grade4-up", unit: "unit3" },
+            { english: "favourite", chinese: "最喜欢的", category: "grade4-up", unit: "unit3" },
+            { english: "place", chinese: "地方；场所", category: "grade4-up", unit: "unit3" },
+            { english: "photo", chinese: "照片", category: "grade4-up", unit: "unit3" },
+            { english: "story", chinese: "故事", category: "grade4-up", unit: "unit3" },
+            { english: "buy", chinese: "购买", category: "grade4-up", unit: "unit3" },
+
+            // Unit 4 更多职业
+            { english: "firefighter", chinese: "消防队员", category: "grade4-up", unit: "unit4" },
+            { english: "why", chinese: "为什么", category: "grade4-up", unit: "unit4" },
+            { english: "driver", chinese: "司机", category: "grade4-up", unit: "unit4" },
+            { english: "cleaner", chinese: "清洁工", category: "grade4-up", unit: "unit4" },
+            { english: "cook", chinese: "厨师", category: "grade4-up", unit: "unit4" },
+            { english: "delivery worker", chinese: "快递员", category: "grade4-up", unit: "unit4" },
+            { english: "police", chinese: "警察", category: "grade4-up", unit: "unit4" },
+            { english: "police officer", chinese: "警察；警员", category: "grade4-up", unit: "unit4" },
+            { english: "a lot of", chinese: "大量；许多", category: "grade4-up", unit: "unit4" },
+            { english: "those", chinese: "（that的复数形式）那些", category: "grade4-up", unit: "unit4" },
+            { english: "bed", chinese: "床", category: "grade4-up", unit: "unit4" },
+            { english: "make the bed", chinese: "铺床", category: "grade4-up", unit: "unit4" },
+            { english: "old", chinese: "过去的；年纪大的；老的", category: "grade4-up", unit: "unit4" },
+            { english: "tell", chinese: "讲述；告诉", category: "grade4-up", unit: "unit4" },
+            { english: "everyone", chinese: "每人", category: "grade4-up", unit: "unit4" },
+            { english: "volunteer", chinese: "志愿者", category: "grade4-up", unit: "unit4" },
+            { english: "Mrs", chinese: "太太；夫人", category: "grade4-up", unit: "unit4" },
+
+            // Unit 5 天气
+            { english: "speak", chinese: "说话；发言", category: "grade4-up", unit: "unit5" },
+            { english: "weather", chinese: "天气", category: "grade4-up", unit: "unit5" },
+            { english: "sunny", chinese: "阳光充足的", category: "grade4-up", unit: "unit5" },
+            { english: "hot", chinese: "热的", category: "grade4-up", unit: "unit5" },
+            { english: "bad", chinese: "令人不快的；坏的", category: "grade4-up", unit: "unit5" },
+            { english: "cold", chinese: "冷的", category: "grade4-up", unit: "unit5" },
+            { english: "windy", chinese: "多风的", category: "grade4-up", unit: "unit5" },
+            { english: "cloudy", chinese: "多云的", category: "grade4-up", unit: "unit5" },
+            { english: "rainy", chinese: "阴雨的", category: "grade4-up", unit: "unit5" },
+            { english: "snowy", chinese: "多雪的", category: "grade4-up", unit: "unit5" },
+            { english: "cool", chinese: "凉爽的", category: "grade4-up", unit: "unit5" },
+            { english: "warm", chinese: "温暖的", category: "grade4-up", unit: "unit5" },
+            { english: "tomorrow", chinese: "在明天", category: "grade4-up", unit: "unit5" },
+            { english: "rain", chinese: "下雨；雨", category: "grade4-up", unit: "unit5" },
+            { english: "closed", chinese: "关闭的", category: "grade4-up", unit: "unit5" },
+            { english: "film", chinese: "电影", category: "grade4-up", unit: "unit5" },
+            { english: "fly", chinese: "操纵（飞行器等）；飞", category: "grade4-up", unit: "unit5" },
+            { english: "kite", chinese: "风筝", category: "grade4-up", unit: "unit5" },
+            { english: "snowman", chinese: "雪人", category: "grade4-up", unit: "unit5" },
+            { english: "their", chinese: "他们的；她们的；它们的", category: "grade4-up", unit: "unit5" },
+            { english: "swim", chinese: "游泳", category: "grade4-up", unit: "unit5" },
+            { english: "Sydney", chinese: "悉尼", category: "grade4-up", unit: "unit5" },
+
+            // Unit 6 衣物与季节
+            { english: "whose", chinese: "谁的", category: "grade4-up", unit: "unit6" },
+            { english: "sweater", chinese: "毛衣", category: "grade4-up", unit: "unit6" },
+            { english: "sock", chinese: "短袜", category: "grade4-up", unit: "unit6" },
+            { english: "mine", chinese: "我的", category: "grade4-up", unit: "unit6" },
+            { english: "wear", chinese: "穿；戴", category: "grade4-up", unit: "unit6" },
+            { english: "shirt", chinese: "衬衫", category: "grade4-up", unit: "unit6" },
+            { english: "coat", chinese: "大衣；外套", category: "grade4-up", unit: "unit6" },
+            { english: "dress", chinese: "连衣裙", category: "grade4-up", unit: "unit6" },
+            { english: "which", chinese: "哪一个；哪一些", category: "grade4-up", unit: "unit6" },
+            { english: "season", chinese: "季节", category: "grade4-up", unit: "unit6" },
+            { english: "winter", chinese: "冬天", category: "grade4-up", unit: "unit6" },
+            { english: "snow", chinese: "下雪；雪", category: "grade4-up", unit: "unit6" },
+            { english: "get", chinese: "（使）达到，处于", category: "grade4-up", unit: "unit6" },
+            { english: "get together", chinese: "聚会", category: "grade4-up", unit: "unit6" },
+            { english: "spring", chinese: "春天", category: "grade4-up", unit: "unit6" },
+            { english: "summer", chinese: "夏天", category: "grade4-up", unit: "unit6" },
+            { english: "autumn", chinese: "秋天", category: "grade4-up", unit: "unit6" },
+            { english: "T-shirt", chinese: "T恤衫", category: "grade4-up", unit: "unit6" },
+            { english: "fall", chinese: "落下", category: "grade4-up", unit: "unit6" },
+            { english: "leaf", chinese: "叶", category: "grade4-up", unit: "unit6" },
+            { english: "glove", chinese: "手套", category: "grade4-up", unit: "unit6" },
+            { english: "then", chinese: "然后；那时", category: "grade4-up", unit: "unit6" },
+
+            // ==================== 四年级下册 ====================
+            // Unit 1 教室与规则
+            { english: "sorry", chinese: "对不起", category: "grade4-down", unit: "unit1" },
+            { english: "hurry up", chinese: "快点；赶快", category: "grade4-down", unit: "unit1" },
+            { english: "late", chinese: "迟到；迟发生", category: "grade4-down", unit: "unit1" },
+            { english: "class", chinese: "课；课程；班；班级", category: "grade4-down", unit: "unit1" },
+            { english: "ready", chinese: "准备好", category: "grade4-down", unit: "unit1" },
+            { english: "classroom", chinese: "教室", category: "grade4-down", unit: "unit1" },
+            { english: "rule", chinese: "规则；规章", category: "grade4-down", unit: "unit1" },
+            { english: "turn off", chinese: "关掉", category: "grade4-down", unit: "unit1" },
+            { english: "light", chinese: "灯；光", category: "grade4-down", unit: "unit1" },
+            { english: "blackboard", chinese: "黑板", category: "grade4-down", unit: "unit1" },
+            { english: "desk", chinese: "书桌；办公桌", category: "grade4-down", unit: "unit1" },
+            { english: "chair", chinese: "椅子", category: "grade4-down", unit: "unit1" },
+            { english: "tidy", chinese: "整洁的；整理", category: "grade4-down", unit: "unit1" },
+            { english: "music", chinese: "音乐", category: "grade4-down", unit: "unit1" },
+            { english: "door", chinese: "门", category: "grade4-down", unit: "unit1" },
+            { english: "window", chinese: "窗", category: "grade4-down", unit: "unit1" },
+            { english: "fan", chinese: "风扇", category: "grade4-down", unit: "unit1" },
+            { english: "when", chinese: "什么时候；当...时", category: "grade4-down", unit: "unit1" },
+            { english: "understand", chinese: "懂；理解", category: "grade4-down", unit: "unit1" },
+            { english: "wall", chinese: "墙；壁", category: "grade4-down", unit: "unit1" },
+            { english: "newspaper", chinese: "报纸", category: "grade4-down", unit: "unit1" },
+            { english: "hand out", chinese: "分发", category: "grade4-down", unit: "unit1" },
+            { english: "workbook", chinese: "练习册；作业本", category: "grade4-down", unit: "unit1" },
+
+            // Unit 2 日常活动与时间
+            { english: "watch", chinese: "看；手表", category: "grade4-down", unit: "unit2" },
+            { english: "TV", chinese: "电视", category: "grade4-down", unit: "unit2" },
+            { english: "homework", chinese: "家庭作业", category: "grade4-down", unit: "unit2" },
+            { english: "first", chinese: "第一；首先", category: "grade4-down", unit: "unit2" },
+            { english: "wet", chinese: "湿的；未干的", category: "grade4-down", unit: "unit2" },
+            { english: "run", chinese: "跑；奔跑", category: "grade4-down", unit: "unit2" },
+            { english: "living room", chinese: "客厅；起居室", category: "grade4-down", unit: "unit2" },
+            { english: "safe", chinese: "安全的", category: "grade4-down", unit: "unit2" },
+            { english: "word", chinese: "言语；单词；字", category: "grade4-down", unit: "unit2" },
+            { english: "wash", chinese: "洗", category: "grade4-down", unit: "unit2" },
+            { english: "helpful", chinese: "有帮助的；有用的", category: "grade4-down", unit: "unit2" },
+            { english: "loud", chinese: "说话太大声的；吵闹的", category: "grade4-down", unit: "unit2" },
+            { english: "sleep", chinese: "睡觉", category: "grade4-down", unit: "unit2" },
+            { english: "bedroom", chinese: "卧室", category: "grade4-down", unit: "unit2" },
+            { english: "kitchen", chinese: "厨房", category: "grade4-down", unit: "unit2" },
+            { english: "study", chinese: "书房；学习", category: "grade4-down", unit: "unit2" },
+            { english: "bathroom", chinese: "浴室；洗手间", category: "grade4-down", unit: "unit2" },
+            { english: "think", chinese: "想；思考", category: "grade4-down", unit: "unit2" },
+            { english: "work", chinese: "做；工作", category: "grade4-down", unit: "unit2" },
+            { english: "hard", chinese: "努力地；硬的", category: "grade4-down", unit: "unit2" },
+            { english: "follow", chinese: "遵循；听从", category: "grade4-down", unit: "unit2" },
+            { english: "feel", chinese: "觉得；感到", category: "grade4-down", unit: "unit2" },
+
+            // Unit 3 日常作息与学校
+            { english: "over", chinese: "结束的；在...上方", category: "grade4-down", unit: "unit3" },
+            { english: "kid", chinese: "小孩", category: "grade4-down", unit: "unit3" },
+            { english: "dinner", chinese: "正餐", category: "grade4-down", unit: "unit3" },
+            { english: "art", chinese: "美术；艺术", category: "grade4-down", unit: "unit3" },
+            { english: "lunch", chinese: "午餐", category: "grade4-down", unit: "unit3" },
+            { english: "maths", chinese: "数学", category: "grade4-down", unit: "unit3" },
+            { english: "get up", chinese: "起床", category: "grade4-down", unit: "unit3" },
+            { english: "go to school", chinese: "上学", category: "grade4-down", unit: "unit3" },
+            { english: "go home", chinese: "回家", category: "grade4-down", unit: "unit3" },
+            { english: "go to bed", chinese: "上床睡觉", category: "grade4-down", unit: "unit3" },
+            { english: "want", chinese: "想要", category: "grade4-down", unit: "unit3" },
+            { english: "clock", chinese: "时钟", category: "grade4-down", unit: "unit3" },
+            { english: "minute", chinese: "分钟", category: "grade4-down", unit: "unit3" },
+            { english: "just", chinese: "只是；仅仅；正要", category: "grade4-down", unit: "unit3" },
+
+            // Unit 4 服装与购物
+            { english: "trousers", chinese: "裤子（复数）", category: "grade4-down", unit: "unit4" },
+            { english: "clothes", chinese: "衣服；服装（复数）", category: "grade4-down", unit: "unit4" },
+            { english: "pair", chinese: "一条；一副", category: "grade4-down", unit: "unit4" },
+            { english: "those", chinese: "那些", category: "grade4-down", unit: "unit4" },
+            { english: "shorts", chinese: "短裤（复数）", category: "grade4-down", unit: "unit4" },
+            { english: "jacket", chinese: "夹克衫；短上衣", category: "grade4-down", unit: "unit4" },
+            { english: "skirt", chinese: "裙子", category: "grade4-down", unit: "unit4" },
+            { english: "dear", chinese: "亲爱的；哎呀", category: "grade4-down", unit: "unit4" },
+            { english: "expensive", chinese: "昂贵的；价格高的", category: "grade4-down", unit: "unit4" },
+            { english: "take", chinese: "买下；拿", category: "grade4-down", unit: "unit4" },
+            { english: "cheap", chinese: "便宜的", category: "grade4-down", unit: "unit4" },
+            { english: "shoe", chinese: "鞋", category: "grade4-down", unit: "unit4" },
+            { english: "beautiful", chinese: "美丽的", category: "grade4-down", unit: "unit4" },
+            { english: "hat", chinese: "帽子", category: "grade4-down", unit: "unit4" },
+            { english: "sunglasses", chinese: "太阳镜；墨镜（复数）", category: "grade4-down", unit: "unit4" },
+            { english: "free", chinese: "免费的；自由的", category: "grade4-down", unit: "unit4" },
+            { english: "large", chinese: "大型号的；大的", category: "grade4-down", unit: "unit4" },
+            { english: "size", chinese: "尺码；号", category: "grade4-down", unit: "unit4" },
+            { english: "list", chinese: "清单；目录", category: "grade4-down", unit: "unit4" },
+            { english: "try on", chinese: "试穿", category: "grade4-down", unit: "unit4" },
+            { english: "any", chinese: "任何的；任一", category: "grade4-down", unit: "unit4" },
+
+            // Unit 5 农场动物与蔬菜
+            { english: "cow", chinese: "奶牛", category: "grade4-down", unit: "unit5" },
+            { english: "horse", chinese: "马", category: "grade4-down", unit: "unit5" },
+            { english: "sheep", chinese: "羊；绵羊（单复同形）", category: "grade4-down", unit: "unit5" },
+            { english: "pig", chinese: "猪", category: "grade4-down", unit: "unit5" },
+            { english: "chicken", chinese: "鸡；鸡肉", category: "grade4-down", unit: "unit5" },
+            { english: "tomato", chinese: "西红柿", category: "grade4-down", unit: "unit5" },
+            { english: "bee", chinese: "蜜蜂", category: "grade4-down", unit: "unit5" },
+            { english: "mouse", chinese: "老鼠（复数 mice）", category: "grade4-down", unit: "unit5" },
+            { english: "carrot", chinese: "胡萝卜", category: "grade4-down", unit: "unit5" },
+            { english: "potato", chinese: "土豆", category: "grade4-down", unit: "unit5" },
+            { english: "can", chinese: "金属罐", category: "grade4-down", unit: "unit5" },
+            { english: "green bean", chinese: "青刀豆；四季豆", category: "grade4-down", unit: "unit5" },
+            { english: "a box of", chinese: "一盒；一箱", category: "grade4-down", unit: "unit5" },
+
+            // Unit 6 食物与餐具
+            { english: "feed", chinese: "饲养；喂", category: "grade4-down", unit: "unit6" },
+            { english: "pass", chinese: "给；递", category: "grade4-down", unit: "unit6" },
+            { english: "pick", chinese: "采；摘", category: "grade4-down", unit: "unit6" },
+            { english: "milk", chinese: "挤奶；牛奶", category: "grade4-down", unit: "unit6" },
+            { english: "knife", chinese: "刀（复数 knives）", category: "grade4-down", unit: "unit6" },
+            { english: "fork", chinese: "餐叉", category: "grade4-down", unit: "unit6" },
+            { english: "chopstick", chinese: "筷子（常用复数）", category: "grade4-down", unit: "unit6" },
+            { english: "waste", chinese: "浪费；废品", category: "grade4-down", unit: "unit6" },
+            { english: "food", chinese: "菜肴；食物", category: "grade4-down", unit: "unit6" },
+            { english: "delicious", chinese: "美味的；可口的", category: "grade4-down", unit: "unit6" },
+            { english: "clear the table", chinese: "收拾餐桌", category: "grade4-down", unit: "unit6" },
+            { english: "set the table", chinese: "摆放餐具", category: "grade4-down", unit: "unit6" },
+            { english: "spoon", chinese: "勺；匙；调羹", category: "grade4-down", unit: "unit6" },
+            { english: "bowl", chinese: "碗", category: "grade4-down", unit: "unit6" },
+            { english: "supermarket", chinese: "超市", category: "grade4-down", unit: "unit6" },
+            { english: "herself", chinese: "她自己", category: "grade4-down", unit: "unit6" },
+            { english: "week", chinese: "周；星期", category: "grade4-down", unit: "unit6" },
+            { english: "salad", chinese: "蔬菜沙拉", category: "grade4-down", unit: "unit6" }
+        ];
+
+        // 工具函数
+        function getCategoryName(category) {
+            const names = {
+                'all': '全部',
+                'grade3-up': '三年级上册',
+                'grade3-down': '三年级下册',
+                'grade4-up': '四年级上册',
+                'grade4-down': '四年级下册'
+            };
+            return names[category] || category;
+        }
+
+        // 渲染词汇表 - 支持类别和单元筛选
+        function renderVocabularyTable(category = 'all', unit = 'all') {
+            const tableBody = document.getElementById('vocab-table-body');
+            tableBody.innerHTML = '';
+
+            let filteredVocabulary = vocabularyData;
+
+            // 按类别筛选
+            if (category !== 'all') {
+                filteredVocabulary = filteredVocabulary.filter(word => word.category === category);
+            }
+
+            // 按单元筛选
+            if (unit !== 'all') {
+                filteredVocabulary = filteredVocabulary.filter(word => word.unit === unit);
+            }
+
+            if (filteredVocabulary.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8">暂无词汇数据</td></tr>';
+                return;
+            }
+
+            filteredVocabulary.forEach(word => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${word.english}</td>
+                    <td>${word.chinese}</td>
+                    <td>${getCategoryName(word.category)}</td>
+                    <td>${getUnitName(word.unit)}</td>
+                    <td>
+                        <button class="text-blue-500 hover:text-blue-700" onclick="playWordAudio('${word.english}')">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 获取单元名称
+        function getUnitName(unit) {
+            const names = {
+                'all': '全部单元',
+                'unit1': 'Unit 1',
+                'unit2': 'Unit 2',
+                'unit3': 'Unit 3',
+                'unit4': 'Unit 4',
+                'unit5': 'Unit 5',
+                'unit6': 'Unit 6'
+            };
+            return names[unit] || unit;
+        }
+
+        // 语音播放 - 快速美式发音
+        let cachedVoices = [];
+        
+        function playWordAudio(word) {
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+            utterance.pitch = 1;
+            
+            // 优先使用缓存的语音列表
+            if (cachedVoices.length > 0) {
+                const usVoice = cachedVoices.find(v => v.lang === 'en-US') 
+                             || cachedVoices.find(v => v.lang.includes('en-US'))
+                             || cachedVoices[0];
+                if (usVoice) utterance.voice = usVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        // 预加载语音列表（页面加载时执行）
+        function initVoices() {
+            if (speechSynthesis.getVoices().length > 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            speechSynthesis.onvoiceschanged = () => {
+                cachedVoices = speechSynthesis.getVoices();
+            };
+        }
+        
+        // 页面加载时初始化
+        initVoices();
+
+        // 事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，初始化所有事件监听器');
+
+            // 词汇类别和单元选择
+            const categorySelect = document.getElementById('category-select');
+            const unitSelect = document.getElementById('unit-select');
+
+            // 当选择改变时自动保存筛选条件
+            categorySelect.addEventListener('change', function() {
+                const category = categorySelect.value;
+                const unit = unitSelect.value;
+                window.currentFilter = { category, unit };
+                console.log('年级筛选变化:', { category, unit });
+            });
+
+            unitSelect.addEventListener('change', function() {
+                const category = categorySelect.value;
+                const unit = unitSelect.value;
+                window.currentFilter = { category, unit };
+                console.log('单元筛选变化:', { category, unit });
+            });
+
+            // 保存当前选择的筛选条件
+            window.currentFilter = {
+                category: 'all',
+                unit: 'all'
+            };
+
+            // 查看词汇表按钮
+            document.getElementById('view-vocabulary').addEventListener('click', function() {
+                console.log('点击了查看词汇表按钮');
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('vocabulary-list').classList.remove('hidden');
+                renderVocabularyTable('all');
+            });
+
+            // 返回主页按钮
+            document.getElementById('back-from-vocab').addEventListener('click', function() {
+                console.log('点击了返回主页按钮');
+                document.getElementById('vocabulary-list').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+            });
+
+            // 游戏模式卡片点击事件
+            document.getElementById('pairing-card').addEventListener('click', function() {
+                console.log('点击了单词配对卡片');
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('pairing-game').classList.remove('hidden');
+                startPairingGame();
+            });
+
+            document.getElementById('spelling-card').addEventListener('click', function() {
+                console.log('点击了拼写练习卡片');
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('spelling-game').classList.remove('hidden');
+                startSpellingGame();
+            });
+
+            document.getElementById('quiz-card').addEventListener('click', function() {
+                console.log('点击了快速测验卡片');
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('quiz-game').classList.remove('hidden');
+                startQuizGame();
+            });
+
+            // 游戏返回按钮
+            document.getElementById('back-from-pairing').addEventListener('click', function() {
+                document.getElementById('pairing-game').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+            });
+
+            document.getElementById('back-from-spelling').addEventListener('click', function() {
+                document.getElementById('spelling-game').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+            });
+
+            document.getElementById('back-from-quiz').addEventListener('click', function() {
+                document.getElementById('quiz-game').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+            });
+
+            // 初始化渲染词汇表
+            renderVocabularyTable('all');
+        });
+
+        // ========== 配对游戏功能 ==========
+        let selectedCard = null;
+
+        function startPairingGame() {
+            const board = document.getElementById('pairing-board');
+            board.innerHTML = '';
+
+            // 获取当前选择的筛选条件
+            const currentFilter = window.currentFilter || { category: 'all', unit: 'all' };
+            const category = currentFilter.category;
+            const unit = currentFilter.unit;
+
+            console.log('开始单词配对游戏，筛选条件:', { category, unit });
+
+            // 筛选词汇
+            let words = vocabularyData;
+
+            // 按类别筛选
+            if (category !== 'all') {
+                words = words.filter(word => word.category === category);
+            }
+
+            // 按单元筛选
+            if (unit !== 'all') {
+                words = words.filter(word => word.unit === unit);
+            }
+
+            // 先随机打乱，然后取前6对
+            words = [...words].sort(() => Math.random() - 0.5).slice(0, 6);
+
+            if (words.length === 0) {
+                board.innerHTML = '<p class="text-center py-8 col-span-4">该类别暂无词汇数据</p>';
+                return;
+            }
+
+            // 创建卡片数据
+            const cards = [];
+            words.forEach(word => {
+                cards.push({ id: `en-${word.english}`, text: word.english, type: 'english', matchId: `cn-${word.english}`, word: word });
+                cards.push({ id: `cn-${word.english}`, text: word.chinese, type: 'chinese', matchId: `en-${word.english}`, word: word });
+            });
+
+            // 打乱卡片顺序
+            cards.sort(() => Math.random() - 0.5);
+
+            // 重置选择状态
+            selectedCard = null;
+
+            // 创建卡片元素 - 正面显示
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `pairing-card ${card.type === 'english' ? 'english-card' : 'chinese-card'}`;
+                cardElement.dataset.id = card.id;
+                cardElement.dataset.matchId = card.matchId;
+                cardElement.dataset.type = card.type;
+                cardElement.dataset.text = card.text;
+                cardElement.textContent = card.text;
+
+                cardElement.addEventListener('click', handlePairingCardClick);
+                board.appendChild(cardElement);
+            });
+
+            // 配对游戏状态
+            window.pairingGameState = {
+                matchedPairs: 0,
+                totalPairs: words.length,
+                isProcessing: false
+            };
+        }
+
+        function handlePairingCardClick() {
+            const state = window.pairingGameState;
+
+            // 如果正在处理或卡片已匹配，则不响应
+            if (state.isProcessing || this.classList.contains('matched')) return;
+
+            // 如果点击的是已经选中的卡片，取消选择
+            if (this.classList.contains('selected')) {
+                this.classList.remove('selected');
+                selectedCard = null;
+                return;
+            }
+
+            // 如果已经有选中的卡片
+            if (selectedCard) {
+                const firstCard = selectedCard;
+                const secondCard = this;
+
+                // 检查是否匹配：两张卡片的 matchId 和 id 互相对应
+                // 英文卡片的 matchId 应该等于中文卡片的 id
+                // 中文卡片的 matchId 应该等于英文卡片的 id
+                const isMatch = firstCard.dataset.matchId === secondCard.dataset.id;
+
+                if (isMatch) {
+                    // 匹配成功
+                    state.isProcessing = true;
+
+                    firstCard.classList.remove('selected');
+                    firstCard.classList.add('matched', 'match-animate');
+                    secondCard.classList.add('matched', 'match-animate');
+                    state.matchedPairs++;
+
+                    // 动画结束后移除动画类
+                    setTimeout(() => {
+                        firstCard.classList.remove('match-animate');
+                        secondCard.classList.remove('match-animate');
+                    }, 300);
+
+                    selectedCard = null;
+                    state.isProcessing = false;
+
+                    // 检查是否完成所有配对
+                    if (state.matchedPairs === state.totalPairs) {
+                        setTimeout(() => {
+                            showVictoryMessage();
+                        }, 500);
+                    }
+                } else {
+                    // 匹配失败
+                    state.isProcessing = true;
+
+                    firstCard.classList.add('shake');
+                    secondCard.classList.add('shake');
+
+                    setTimeout(() => {
+                        firstCard.classList.remove('selected', 'shake');
+                        secondCard.classList.remove('shake');
+                        selectedCard = null;
+                        state.isProcessing = false;
+                    }, 500);
+                }
+            } else {
+                // 选择第一张卡片
+                selectedCard = this;
+                this.classList.add('selected');
+            }
+        }
+
+        function showVictoryMessage() {
+            const state = window.pairingGameState;
+            const victoryDiv = document.createElement('div');
+            victoryDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            victoryDiv.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md mx-4 transform transition-all">
+                    <div class="text-yellow-500 text-6xl mb-4">
+                        <i class="fa fa-trophy"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">恭喜你！</h3>
+                    <p class="mb-4">你成功完成了所有单词配对！</p>
+                    <p class="text-lg mb-6">共配对了 <span class="font-bold text-blue-600">${state.totalPairs}</span> 对单词</p>
+                    <div class="flex justify-center gap-4">
+                        <button id="play-again-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                            再玩一次
+                        </button>
+                        <button id="back-to-home-btn" class="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded-lg transition-colors">
+                            返回主页
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(victoryDiv);
+
+            // 添加按钮事件监听器
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                document.body.removeChild(victoryDiv);
+                startPairingGame();
+            });
+
+            document.getElementById('back-to-home-btn').addEventListener('click', () => {
+                document.body.removeChild(victoryDiv);
+                document.getElementById('pairing-game').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+            });
+        }
+
+        // ========== 拼写游戏功能 ==========
+        function startSpellingGame() {
+            const container = document.getElementById('spelling-container');
+            container.innerHTML = '';
+
+            // 获取当前选择的筛选条件
+            const currentFilter = window.currentFilter || { category: 'all', unit: 'all' };
+            const category = currentFilter.category;
+            const unit = currentFilter.unit;
+
+            console.log('开始拼写练习游戏，筛选条件:', { category, unit });
+
+            // 筛选词汇
+            let words = vocabularyData;
+
+            // 按类别筛选
+            if (category !== 'all') {
+                words = words.filter(word => word.category === category);
+            }
+
+            // 按单元筛选
+            if (unit !== 'all') {
+                words = words.filter(word => word.unit === unit);
+            }
+
+            // 打乱单词顺序
+            words = [...words].sort(() => Math.random() - 0.5);
+
+            if (words.length === 0) {
+                container.innerHTML = '<p class="text-center py-8">该类别暂无词汇数据</p>';
+                return;
+            }
+
+            // 创建游戏界面
+            const gameDiv = document.createElement('div');
+            gameDiv.className = 'max-w-2xl mx-auto';
+
+            // 游戏状态 - 增加错误单词记录
+            window.spellingGameState = {
+                currentWordIndex: 0,
+                correctCount: 0,
+                wrongCount: 0,
+                wrongWords: [], // 记录错误的单词
+                words: words.slice(0, 15) // 最多15个单词
+            };
+
+            // 显示当前单词
+            showCurrentSpellingWord(gameDiv);
+
+            container.appendChild(gameDiv);
+        }
+
+        function showCurrentSpellingWord(container) {
+            const state = window.spellingGameState;
+            if (state.currentWordIndex >= state.words.length) {
+                // 游戏结束 - 显示完成界面和错误单词列表
+                const wrongWordsHtml = state.wrongWords.length > 0
+                    ? `
+                        <div class="mt-6 p-4 bg-red-50 rounded-lg">
+                            <h4 class="text-lg font-bold text-red-600 mb-3"><i class="fa fa-exclamation-triangle mr-2"></i>需要加强练习的单词：</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                ${state.wrongWords.map(w => `
+                                    <div class="bg-white p-3 rounded-lg border border-red-200">
+                                        <div class="font-bold text-blue-600">${w.english}</div>
+                                        <div class="text-gray-600 text-sm">${w.chinese}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `
+                    : '';
+                    
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-white rounded-lg shadow">
+                        <h3 class="text-2xl font-bold mb-4">拼写练习完成！🎉</h3>
+                        <div class="mb-4">
+                            <p class="text-4xl font-bold text-blue-600">${Math.round((state.correctCount / state.words.length) * 100)}%</p>
+                            <p class="text-gray-500">准确率</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="p-4 bg-green-50 rounded-lg">
+                                <p class="text-2xl font-bold text-green-600">${state.correctCount}</p>
+                                <p class="text-sm text-gray-500">正确</p>
+                            </div>
+                            <div class="p-4 bg-red-50 rounded-lg">
+                                <p class="text-2xl font-bold text-red-600">${state.wrongCount}</p>
+                                <p class="text-sm text-gray-500">错误</p>
+                            </div>
+                        </div>
+                        ${wrongWordsHtml}
+                        <button class="btn-primary mt-4" onclick="startSpellingGame()">再玩一次</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const word = state.words[state.currentWordIndex];
+            
+            // 生成下划线输入区域（每个字母一个格子，多个单词用空格分隔）
+            const wordParts = word.english.split(' ');
+            let letterIndex = 0;
+            const letterBoxesHtml = wordParts.map((part, partIndex) => {
+                const boxes = [];
+                for (let i = 0; i < part.length; i++) {
+                    boxes.push(`
+                        <div class="letter-box flex flex-col items-center">
+                            <span class="letter-display text-3xl font-bold text-blue-600 h-10 flex items-center justify-center" data-index="${letterIndex}"></span>
+                            <span class="letter-underline text-3xl font-bold text-gray-400">_</span>
+                        </div>
+                    `);
+                    letterIndex++;
+                }
+                // 单词之间添加分隔，但不在最后添加
+                if (partIndex < wordParts.length - 1) {
+                    boxes.push(`<div class="w-4"></div>`);
+                }
+                return boxes.join('');
+            }).join('');
+
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="text-sm text-gray-500">单词 ${state.currentWordIndex + 1}/${state.words.length}</span>
+                        </div>
+                        <div class="flex gap-4">
+                            <span class="text-green-600">正确: ${state.correctCount}</span>
+                            <span class="text-red-600">错误: ${state.wrongCount}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold mb-2">${word.chinese}</h3>
+                        <p class="text-gray-600 mb-4">请拼写对应的英文单词</p>
+                        <button class="text-blue-500 hover:text-blue-700 mb-4" onclick="playWordAudio('${word.english}')">
+                            <i class="fa fa-volume-up mr-2"></i> 听发音
+                        </button>
+                    </div>
+
+                    <!-- 下划线输入区域 -->
+                    <div class="text-center mb-6">
+                        <p class="text-gray-500 text-sm mb-3">点击下方区域后输入字母：</p>
+                        <div class="relative inline-block" id="letter-container-wrapper">
+                            <!-- 透明输入框覆盖整个区域 -->
+                            <input type="text" id="spelling-input" 
+                                   class="absolute inset-0 w-full h-full opacity-0 cursor-text z-10" 
+                                   autocomplete="off" 
+                                   autocapitalize="off"
+                                   autocorrect="off"
+                                   spellcheck="false">
+                            <!-- 字母显示层 -->
+                            <div class="inline-flex items-center justify-center flex-wrap gap-1 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-blue-200" id="letter-container">
+                                ${letterBoxesHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-2">
+                            <button id="delete-letter-btn" class="btn-primary bg-orange-500 hover:bg-orange-600">
+                                <i class="fa fa-arrow-left mr-1"></i> 删除
+                            </button>
+                            <button id="clear-input-btn" class="btn-primary bg-gray-500 hover:bg-gray-600">
+                                <i class="fa fa-eraser mr-1"></i> 清除
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="skip-word-btn" class="btn-primary bg-yellow-500 hover:bg-yellow-600">跳过</button>
+                            <button id="check-spelling-btn" class="btn-primary">提交</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 设置当前单词信息到 window，供其他函数使用
+            window.currentSpellingWord = word;
+            window.currentLetterIndex = 0;
+
+            // 聚焦到输入框
+            setTimeout(() => {
+                const input = document.getElementById('spelling-input');
+                if (input) {
+                    input.focus();
+                    
+                    // PC端：使用keypress捕获单字符
+                    input.addEventListener('keypress', handleKeyPress);
+                    input.addEventListener('keydown', handleLetterKeydown);
+                    
+                    // 手机端：使用input事件捕获虚拟键盘输入
+                    input.addEventListener('input', handleMobileInput);
+                    input.addEventListener('keyup', handleMobileKeyup);
+                    
+                    // 点击字母区域时聚焦到输入框
+                    const wrapper = document.getElementById('letter-container-wrapper');
+                    if (wrapper) {
+                        wrapper.addEventListener('click', function() {
+                            input.focus();
+                        });
+                    }
+                }
+
+                // 绑定按钮事件
+                document.getElementById('check-spelling-btn').addEventListener('click', checkSpelling);
+                document.getElementById('skip-word-btn').addEventListener('click', skipWord);
+                document.getElementById('clear-input-btn').addEventListener('click', clearLetterInputs);
+                document.getElementById('delete-letter-btn').addEventListener('click', deleteLastLetter);
+            }, 100);
+        }
+
+        // 处理字母输入 - 同时支持PC和手机端
+        let letterBuffer = ''; // 用于累积输入的字母
+        
+        function addLetter(char) {
+            const word = window.currentSpellingWord;
+            const idx = window.currentLetterIndex;
+            
+            if (idx < word.english.length) {
+                const displayEl = document.querySelector(`.letter-display[data-index="${idx}"]`);
+                if (displayEl) {
+                    displayEl.textContent = char.toLowerCase();
+                    displayEl.classList.add('letter-filled');
+                }
+                window.currentLetterIndex++;
+            }
+        }
+        
+        function removeLetter() {
+            if (window.currentLetterIndex > 0) {
+                window.currentLetterIndex--;
+                const displayEl = document.querySelector(`.letter-display[data-index="${window.currentLetterIndex}"]`);
+                if (displayEl) {
+                    displayEl.textContent = '';
+                    displayEl.classList.remove('letter-filled');
+                }
+            }
+        }
+        
+        // PC端：使用keypress捕获单字符
+        function handleKeyPress(e) {
+            const char = e.key;
+            if (char.length === 1 && /^[a-zA-Z]$/.test(char)) {
+                e.preventDefault();
+                addLetter(char);
+            }
+        }
+
+        // PC端：处理键盘事件
+        function handleLetterKeydown(e) {
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                removeLetter();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                checkSpelling();
+            }
+        }
+        
+        // 手机端：使用input事件捕获虚拟键盘输入
+        function handleMobileInput(e) {
+            const input = e.target;
+            const value = input.value;
+            
+            // 分析新增的字符
+            for (let i = 0; i < value.length; i++) {
+                const char = value[i];
+                if (/^[a-zA-Z]$/.test(char)) {
+                    addLetter(char);
+                }
+            }
+            
+            // 清空输入框内容但保持聚焦
+            input.value = '';
+            input.focus();
+        }
+        
+        // 手机端：处理虚拟键盘删除键
+        function handleMobileKeyup(e) {
+            // 在移动端，keyup可能无法区分删除的是哪个键
+            // 所以主要依赖input事件来检测输入
+            const input = e.target;
+            
+            // 如果输入框被清空了（可能是删除了字符），同步格子状态
+            // 但这在移动端不太可靠，所以也提供一个单独的删除按钮
+        }
+
+        // 清除所有字母输入
+        function clearLetterInputs() {
+            window.currentLetterIndex = 0;
+            document.querySelectorAll('.letter-display').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('letter-filled');
+            });
+            const input = document.getElementById('spelling-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+        
+        // 单个字母删除按钮（手机端友好）
+        function deleteLastLetter() {
+            removeLetter();
+        }
+
+        function checkSpelling() {
+            const input = document.getElementById('spelling-input');
+            const state = window.spellingGameState;
+            const currentWord = state.words[state.currentWordIndex];
+            
+            // 从字母格子中收集用户输入的字母
+            let userInput = '';
+            document.querySelectorAll('.letter-display').forEach(el => {
+                userInput += el.textContent;
+            });
+            userInput = userInput.toLowerCase().trim();
+
+            if (userInput === currentWord.english.toLowerCase()) {
+                // 正确
+                state.correctCount++;
+                showFeedback('correct', `正确！${currentWord.english}`, () => {
+                    state.currentWordIndex++;
+                    const container = document.getElementById('spelling-container').firstChild;
+                    if (container) {
+                        showCurrentSpellingWord(container);
+                    } else {
+                        startSpellingGame();
+                    }
+                });
+            } else {
+                // 错误 - 记录到错误单词列表
+                state.wrongCount++;
+                // 避免重复添加
+                if (!state.wrongWords.find(w => w.english === currentWord.english)) {
+                    state.wrongWords.push(currentWord);
+                }
+                showFeedback('wrong', `错误！正确答案是：${currentWord.english}`, () => {
+                    state.currentWordIndex++;
+                    const container = document.getElementById('spelling-container').firstChild;
+                    if (container) {
+                        showCurrentSpellingWord(container);
+                    } else {
+                        startSpellingGame();
+                    }
+                });
+            }
+        }
+
+        function skipWord() {
+            const state = window.spellingGameState;
+            const currentWord = state.words[state.currentWordIndex];
+            state.wrongCount++;
+            // 跳过也记录为错误
+            if (!state.wrongWords.find(w => w.english === currentWord.english)) {
+                state.wrongWords.push(currentWord);
+            }
+
+            showFeedback('wrong', `跳过！正确答案是：${currentWord.english}`, () => {
+                state.currentWordIndex++;
+                const container = document.getElementById('spelling-container').firstChild;
+                showCurrentSpellingWord(container);
+            });
+        }
+
+        function showFeedback(type, message, callback) {
+            const feedback = document.createElement('div');
+            feedback.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 text-center ${type === 'correct' ? 'border-green-500' : 'border-red-500'} border-2`;
+            feedback.innerHTML = `
+                <div class="text-4xl mb-4">
+                    ${type === 'correct' ? '<i class="fa fa-check-circle text-green-500"></i>' : '<i class="fa fa-times-circle text-red-500"></i>'}
+                </div>
+                <p class="text-xl mb-4">${message}</p>
+            `;
+
+            document.body.appendChild(feedback);
+
+            setTimeout(() => {
+                document.body.removeChild(feedback);
+                callback();
+            }, 2000);
+        }
+
+        // ========== 测验游戏功能 ==========
+        function startQuizGame() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            // 获取当前选择的筛选条件
+            const currentFilter = window.currentFilter || { category: 'all', unit: 'all' };
+            const category = currentFilter.category;
+            const unit = currentFilter.unit;
+
+            console.log('开始快速测验游戏，筛选条件:', { category, unit });
+
+            // 筛选词汇
+            let words = vocabularyData;
+
+            // 按类别筛选
+            if (category !== 'all') {
+                words = words.filter(word => word.category === category);
+            }
+
+            // 按单元筛选
+            if (unit !== 'all') {
+                words = words.filter(word => word.unit === unit);
+            }
+
+            if (words.length === 0) {
+                container.innerHTML = '<p class="text-center py-8">该类别暂无词汇数据</p>';
+                return;
+            }
+
+            // 游戏状态 - 增加错误单词记录
+            window.quizGameState = {
+                currentQuestionIndex: 0,
+                correctCount: 0,
+                wrongCount: 0,
+                wrongWords: [], // 记录错误的单词
+                timeLeft: 30, // 30秒倒计时
+                timer: null,
+                words: [...words].sort(() => Math.random() - 0.5).slice(0, 10) // 最多10个问题
+            };
+
+            // 创建游戏界面
+            const gameDiv = document.createElement('div');
+            gameDiv.className = 'max-w-2xl mx-auto';
+
+            // 显示计时器
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'text-center mb-6';
+            timerDiv.innerHTML = `
+                <div class="inline-block bg-blue-100 px-6 py-3 rounded-full">
+                    <i class="fa fa-clock-o text-blue-500 mr-2"></i>
+                    <span id="quiz-timer" class="text-xl font-bold">${window.quizGameState.timeLeft}s</span>
+                </div>
+            `;
+            gameDiv.appendChild(timerDiv);
+
+            // 开始计时
+            startQuizTimer();
+
+            // 显示当前问题
+            showCurrentQuizQuestion(gameDiv);
+
+            container.appendChild(gameDiv);
+        }
+
+        function startQuizTimer() {
+            const timer = document.getElementById('quiz-timer');
+            window.quizGameState.timer = setInterval(() => {
+                window.quizGameState.timeLeft--;
+                timer.textContent = `${window.quizGameState.timeLeft}s`;
+
+                if (window.quizGameState.timeLeft <= 0) {
+                    clearInterval(window.quizGameState.timer);
+                    endQuizGame();
+                }
+            }, 1000);
+        }
+
+        function showCurrentQuizQuestion(container) {
+            const state = window.quizGameState;
+
+            if (state.currentQuestionIndex >= state.words.length) {
+                endQuizGame();
+                return;
+            }
+
+            const currentWord = state.words[state.currentQuestionIndex];
+
+            // 生成选项（1个正确答案 + 3个干扰项）
+            const options = [currentWord.chinese];
+            const otherWords = vocabularyData.filter(w => w.chinese !== currentWord.chinese);
+
+            while (options.length < 4) {
+                const randomWord = otherWords[Math.floor(Math.random() * otherWords.length)];
+                if (!options.includes(randomWord.chinese)) {
+                    options.push(randomWord.chinese);
+                }
+            }
+
+            // 打乱选项顺序
+            options.sort(() => Math.random() - 0.5);
+
+            // 显示问题
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'bg-white p-6 rounded-lg shadow mb-6';
+            questionDiv.innerHTML = `
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold mb-4">${currentWord.english}</h3>
+                    <button class="text-blue-500 hover:text-blue-700 mb-4" onclick="playWordAudio('${currentWord.english}')">
+                        <i class="fa fa-volume-up mr-2"></i> 听发音
+                    </button>
+                    <p class="text-gray-600 mb-4">请选择正确的中文释义</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    ${options.map(option => `
+                        <button class="quiz-option px-4 py-3 border rounded-lg hover:bg-blue-50 transition-colors"
+                                data-correct="${option === currentWord.chinese}">
+                            ${option}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <div class="mt-4 text-center text-sm text-gray-500">
+                    问题 ${state.currentQuestionIndex + 1}/${state.words.length}
+                </div>
+            `;
+
+            // 清空容器并添加问题
+            container.innerHTML = '';
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'text-center mb-6';
+            timerDiv.innerHTML = `
+                <div class="inline-block bg-blue-100 px-6 py-3 rounded-full">
+                    <i class="fa fa-clock-o text-blue-500 mr-2"></i>
+                    <span id="quiz-timer" class="text-xl font-bold">${state.timeLeft}s</span>
+                </div>
+            `;
+            container.appendChild(timerDiv);
+            container.appendChild(questionDiv);
+
+            // 添加选项点击事件
+            const optionsButtons = container.querySelectorAll('.quiz-option');
+            optionsButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const isCorrect = this.dataset.correct === 'true';
+                    checkQuizAnswer(isCorrect, currentWord.chinese, currentWord);
+                });
+            });
+        }
+
+        function checkQuizAnswer(isCorrect, correctAnswer, currentWord) {
+            const state = window.quizGameState;
+
+            if (isCorrect) {
+                state.correctCount++;
+                showQuizFeedback('correct', '回答正确！');
+            } else {
+                state.wrongCount++;
+                // 记录错误单词
+                if (!state.wrongWords.find(w => w.english === currentWord.english)) {
+                    state.wrongWords.push(currentWord);
+                }
+                showQuizFeedback('wrong', `回答错误！正确答案是：${correctAnswer}`);
+            }
+
+            state.currentQuestionIndex++;
+
+            setTimeout(() => {
+                const container = document.getElementById('quiz-container').firstChild;
+                showCurrentQuizQuestion(container);
+            }, 1500);
+        }
+
+        function showQuizFeedback(type, message) {
+            const feedback = document.createElement('div');
+            feedback.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 text-center ${type === 'correct' ? 'border-green-500' : 'border-red-500'} border-2`;
+            feedback.innerHTML = `
+                <div class="text-4xl mb-4">
+                    ${type === 'correct' ? '<i class="fa fa-check-circle text-green-500"></i>' : '<i class="fa fa-times-circle text-red-500"></i>'}
+                </div>
+                <p class="text-xl mb-4">${message}</p>
+            `;
+
+            document.body.appendChild(feedback);
+
+            setTimeout(() => {
+                document.body.removeChild(feedback);
+            }, 1500);
+        }
+
+        function endQuizGame() {
+            const state = window.quizGameState;
+
+            // 清除计时器
+            if (state.timer) {
+                clearInterval(state.timer);
+            }
+
+            const container = document.getElementById('quiz-container');
+            const totalQuestions = state.correctCount + state.wrongCount;
+            const accuracy = totalQuestions > 0 ? Math.round((state.correctCount / totalQuestions) * 100) : 0;
+
+            // 生成错误单词列表
+            const wrongWordsHtml = state.wrongWords.length > 0
+                ? `
+                    <div class="mt-6 p-4 bg-red-50 rounded-lg">
+                        <h4 class="text-lg font-bold text-red-600 mb-3"><i class="fa fa-exclamation-triangle mr-2"></i>需要加强练习的单词：</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            ${state.wrongWords.map(w => `
+                                <div class="bg-white p-3 rounded-lg border border-red-200">
+                                    <div class="font-bold text-blue-600">${w.english}</div>
+                                    <div class="text-gray-600 text-sm">${w.chinese}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `
+                : '';
+
+            container.innerHTML = `
+                <div class="text-center py-8 bg-white rounded-lg shadow">
+                    <h3 class="text-2xl font-bold mb-4">测验完成！🎉</h3>
+                    <div class="mb-6">
+                        <div class="text-6xl mb-4">
+                            <i class="fa fa-trophy text-yellow-500"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-blue-600 mb-2">${accuracy}%</p>
+                        <p class="text-gray-600">准确率</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="p-4 bg-green-50 rounded-lg">
+                            <p class="text-2xl font-bold text-green-600">${state.correctCount}</p>
+                            <p class="text-sm text-gray-500">正确</p>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-lg">
+                            <p class="text-2xl font-bold text-red-600">${state.wrongCount}</p>
+                            <p class="text-sm text-gray-500">错误</p>
+                        </div>
+                    </div>
+                    ${wrongWordsHtml}
+                    <button class="btn-primary mt-4" onclick="startQuizGame()">再玩一次</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
