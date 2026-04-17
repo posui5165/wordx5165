@@ -277,7 +277,7 @@
             <!-- 游戏模式选择 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div id="pairing-card" class="card">
-                    <h3 class="text-xl font-bold mb-2">单词配对</h3>
+                    <h3 class="text-xl font-bold mb-2">单词连连看</h3>
                     <p class="text-gray-600">将英文单词与中文释义精准配对</p>
                 </div>
                 <div id="spelling-card" class="card">
@@ -327,7 +327,7 @@
                 <i class="fa fa-arrow-left"></i> 返回主页
             </button>
         </div>
-        <h2 class="text-2xl font-bold mb-4">单词配对游戏</h2>
+        <h2 class="text-2xl font-bold mb-4">单词连连看游戏</h2>
         <p class="text-center text-gray-600 mb-4">点击一个英文单词，再点击对应的中文释义进行配对</p>
         <div id="pairing-board" class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <!-- 配对卡片将通过JS动态生成 -->
@@ -1017,7 +1017,7 @@
 
             // 游戏模式卡片点击事件
             document.getElementById('pairing-card').addEventListener('click', function() {
-                console.log('点击了单词配对卡片');
+                console.log('点击了单词连连看卡片');
                 document.getElementById('welcome-screen').classList.add('hidden');
                 document.getElementById('pairing-game').classList.remove('hidden');
                 startPairingGame();
@@ -1069,7 +1069,7 @@
             const category = currentFilter.category;
             const unit = currentFilter.unit;
 
-            console.log('开始单词配对游戏，筛选条件:', { category, unit });
+            console.log('开始单词连连看游戏，筛选条件:', { category, unit });
 
             // 筛选词汇
             let words = vocabularyData;
